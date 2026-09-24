@@ -288,7 +288,10 @@ class OdnoklassnikiIE(InfoExtractor):
 
         metadata = flashvars.get('metadata')
         if metadata:
-            metadata = self._parse_json(metadata, video_id)
+            # This used to be a JSON string, but is now sometimes an object, in
+            # which case the outer _parse_json of data-options already decoded it.
+            if isinstance(metadata, str):
+                metadata = self._parse_json(metadata, video_id)
         else:
             data = {}
             st_location = flashvars.get('location')
