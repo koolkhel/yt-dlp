@@ -1113,6 +1113,10 @@ def _open_database_copy(database_path, tmpdir):
     # cannot open sqlite databases if they are already in use (e.g. by the browser)
     database_copy_path = os.path.join(tmpdir, 'temporary.sqlite')
     shutil.copy(database_path, database_copy_path)
+    # A live browser keeps its newest writes (e.g. rotated session cookies) in the
+    # write-ahead log until a checkpoint; without it the copy can be hours stale.
+    if os.path.exists(database_path + '-wal'):
+        shutil.copy(database_path + '-wal', database_copy_path + '-wal')
     conn = sqlite3.connect(database_copy_path)
     return conn.cursor()
 
