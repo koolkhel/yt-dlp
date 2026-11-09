@@ -33,6 +33,12 @@ from ..utils import (
 from ..utils.traversal import require, traverse_obj
 
 
+# VK moved browsers to vk.ru, and vk.com now only redirects there, so a browser
+# session (and therefore --cookies-from-browser) exists only for vk.ru. Requests
+# must go to the same domain, or that session is never sent.
+_VK_HOME = 'https://vk.ru'
+
+
 class VKBaseIE(InfoExtractor):
     _NETRC_MACHINE = 'vk'
 
@@ -74,7 +80,7 @@ class VKBaseIE(InfoExtractor):
 
     def _perform_login(self, username, password):
         login_page, url_handle = self._download_webpage_handle(
-            'https://vk.com', None, 'Downloading login page')
+            _VK_HOME, None, 'Downloading login page')
 
         login_form = self._hidden_inputs(login_page)
 
@@ -88,7 +94,7 @@ class VKBaseIE(InfoExtractor):
         self._apply_first_set_cookie_header(url_handle, 'remixlhk')
 
         login_page = self._download_webpage(
-            'https://vk.com/login', None,
+            f'{_VK_HOME}/login', None,
             note='Logging in',
             data=urlencode_postdata(login_form))
 
@@ -97,7 +103,7 @@ class VKBaseIE(InfoExtractor):
                 'Unable to login, incorrect username and/or password', expected=True)
 
     def _download_payload(self, path, video_id, data, fatal=True):
-        endpoint = f'https://vk.com/{path}.php'
+        endpoint = f'{_VK_HOME}/{path}.php'
         data['al'] = 1
         code, payload = self._download_json(
             endpoint, video_id, data=urlencode_postdata(data), fatal=fatal,
@@ -413,7 +419,7 @@ class VKIE(VKBaseIE):
             video_id = '{}_{}'.format(mobj.group('oid'), mobj.group('id'))
 
             info_page = self._download_webpage(
-                'https://vk.com/video_ext.php?' + mobj.group('embed_query'), video_id)
+                f'{_VK_HOME}/video_ext.php?' + mobj.group('embed_query'), video_id)
 
             error_message = self._html_search_regex(
                 [r'(?s)<!><div[^>]+class="video_layer_message"[^>]*>(.+?)</div>',
@@ -648,7 +654,7 @@ class VKUserVideosIE(VKBaseIE):
                 v = self._VIDEO._make(video[:2])
                 video_id = '%d_%d' % (v.owner_id, v.id)
                 yield self.url_result(
-                    'https://vk.com/video' + video_id, VKIE.ie_key(), video_id)
+                    f'{_VK_HOME}/video' + video_id, VKIE.ie_key(), video_id)
             if count >= total:
                 break
             video_list_json = self._download_payload('al_video', page_id, {
